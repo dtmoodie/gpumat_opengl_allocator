@@ -12,4 +12,10 @@ FIND_PACKAGE(OpenGL REQUIRED)
 
   
 add_executable(main main.cpp)
-  TARGET_LINK_LIBRARIES(main ${OpenCV_LIBS} OpenGL32)
+  TARGET_LINK_LIBRARIES(
+	main 
+	${OpenCV_LIBS} 
+	OpenGL32
+	${CUDA_CUDART_LIBRARY}
+	${CUDA_CUDA_LIBRARY}
+	)

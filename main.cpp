@@ -1,73 +1,20 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/cuda.hpp>
 #include <opencv2/core/opengl.hpp>
-#include <map>
-#include <cuda_gl_interop.h>
+#include <opencv2/core/cuda_stream_accessor.hpp>
+
+#include <Windows.h>
 #include <gl/GL.h>
 #include <gl/GLU.h>
 
-class CudaTexture
-{
-public:
-    CudaTexture();
-    void bind();
-    void unbind();
-    void create(int rows, int cols, int type);
-    cv::cuda::GpuMat getMat();
-    
-protected:
-    cudaGraphicsResource_t cudaResourceTex;
-    // Image texture id used in opengl
-    GLuint imageTex;
-    int rows_, cols_, type_;
-};
+#include <vector_types.h>
+#include <driver_functions.h>
+#include <cuda_runtime.h>
+#include <cuda_gl_interop.h>
 
-CudaTexture::CudaTexture()
-{
-
-}
-
-void CudaTexture::bind()
-{
-
-}
-
-void CudaTexture::unbind()
-{
-
-}
-
-void CudaTexture::create(int rows, int cols, int type)
-{
-    glGenTextures(1, &imageTex);
-    glBindTexture(GL_TEXTURE_2D, imageTex);
-    int gl_type = 0;
-    switch(type)
-    {
-    case CV_8U:
-        gl_type = GL_INTENSITY8;
-        break;
-    case CV_8UC3:
-        gl_type = GL_RGB8
-        break;
-    case CV_16U:
-        gl_type = GL_INTENSITY16;
-        break;
-    case CV_16UC3:
-        gl_type = GL_RGB16
-        break;
-    default:
-        cv::error(100, "Incompatible datatype", __FUNCTION__, __FILE__, __LINE__);
-    }
-    
-    CV_Assert(gl_type);
-    glTexImage2D(GL_TEXTURE_2D, 0, )
-}
-
-cv::cuda::GpuMat CudaTexture::getMat()
-{
-
-}
+#include <map>
+#include <list>
+#include <tuple>
 
 
 
@@ -81,13 +28,14 @@ public:
         
         buffer.create(rows, cols, mat->type(), cv::ogl::Buffer::PIXEL_UNPACK_BUFFER);
 
-        buffer.mapDevice()
-
+        *mat = buffer.mapDevice();
+        mat->allocator = this;
     }
 
-    virtual void free(GpuMat* mat)
+    virtual void free(cv::cuda::GpuMat* mat)
     {
-        
+        auto buffer = current_mapped_buffers[mat->data];
+        unused_ogl_buffers = buffer;
     }
 
 
@@ -98,19 +46,21 @@ public:
         cv::ogl::Buffer buffer;
         buffer.create(rows, cols, type, cv::ogl::Buffer::PIXEL_UNPACK_BUFFER);
         cv::cuda::GpuMat mat = buffer.mapDevice(stream);
-        
-        
+        mat.allocator = this;
+        return mat;
     }
 
-    virtual cv::ogl::Buffer map_buffer(cv::cuda::GpuMat& cv::cuda::Stream stream)
+    virtual cv::ogl::Buffer map_buffer(cv::cuda::GpuMat& mat, cv::cuda::Stream stream)
     {
         
     }
 
 protected:
     // Buffers that are no longer being used
-    std::map<size_t, cv::ogl::Buffer> unused_ogl_buffers;
+    
+    std::list<std::tuple<size_t, cv::ogl::Buffer>> unused_ogl_buffers;
     std::map<unsigned char*, cv::ogl::Buffer> current_mapped_buffers;
+
 };
 
 
